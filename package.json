@@ -1,0 +1,38 @@
+{
+  "name": "antigravity-skill-recorder",
+  "version": "1.0.0",
+  "description": "Google Antigravity Skill Recorder CLI - Capture interactive CLI, GUI, and audio sessions to automatically build Antigravity AI Agent Skills",
+  "main": "dist/cli.js",
+  "bin": {
+    "agy-skill-recorder": "dist/cli.js",
+    "antigravity-skill-recorder": "dist/cli.js"
+  },
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/cli.js",
+    "test": "node --test dist/**/*.test.js"
+  },
+  "keywords": [
+    "antigravity",
+    "agy",
+    "ai-agent",
+    "skill-recorder",
+    "cli",
+    "automation"
+  ],
+  "author": "Antigravity Engineering",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "inquirer": "^8.2.6",
+    "ora": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^8.2.10",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}
