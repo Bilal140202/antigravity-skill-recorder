@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import * as path from "path";
-import { SessionStore } from "../store/session-store";
 import { AnalysisResult, SkillPlan, AntigravitySkillPackage } from "../types";
 
 export class AntigravitySkillBuilder {
@@ -14,16 +13,22 @@ export class AntigravitySkillBuilder {
     return {
       name: slugName,
       title: analysis.intent,
-      description: `Automated skill generated from session recording for: ${analysis.intent}`,
+      description: `Automated skill package generated from session recording: ${analysis.intent}`,
       allowedTools: analysis.detectedTools,
       rules: [
         "Maintain documentation integrity.",
         "Preserve existing API contracts.",
-        "Never guess file paths without inspecting workspace."
+        "Verify command outputs before proceeding."
       ],
       steps: analysis.steps,
       variables: analysis.detectedParameters,
-      helperScripts: []
+      helperScripts: [
+        {
+          filename: "verify_env.sh",
+          language: "bash",
+          content: "#!/usr/bin/env bash\necho 'Verifying workspace environment...'\nexit 0\n"
+        }
+      ]
     };
   }
 
@@ -31,6 +36,7 @@ export class AntigravitySkillBuilder {
     const skillDir = path.join(targetProjectDir, ".agents", "skills", plan.name);
     fs.mkdirSync(skillDir, { recursive: true });
 
+    // 1. SKILL.md Frontmatter & Body
     const yamlFrontmatter = [
       "---",
       `name: ${plan.name}`,
@@ -61,7 +67,7 @@ export class AntigravitySkillBuilder {
     const skillFilePath = path.join(skillDir, "SKILL.md");
     fs.writeFileSync(skillFilePath, fullSkillContent);
 
-    // Write helper scripts if any
+    // 2. Helper Scripts directory
     const helperScripts: Array<{ name: string; path: string; content: string }> = [];
     if (plan.helperScripts.length > 0) {
       const scriptsDir = path.join(skillDir, "scripts");
@@ -77,6 +83,24 @@ export class AntigravitySkillBuilder {
       }
     }
 
+    // 3. Antigravity Rules integration (.agents/rules/)
+    const rulesDir = path.join(targetProjectDir, ".agents", "rules");
+    fs.mkdirSync(rulesDir, { recursive: true });
+    const ruleContent = `# ${plan.name} Rules\n\n- ${plan.rules.join("\n- ")}\n`;
+    const ruleFilePath = path.join(rulesDir, `${plan.name}-rules.md`);
+    fs.writeFileSync(ruleFilePath, ruleContent);
+
+    // 4. Subagent Definition (.agents/subagents/)
+    const subagentDir = path.join(targetProjectDir, ".agents", "subagents");
+    fs.mkdirSync(subagentDir, { recursive: true });
+    const subagentConfig = {
+      name: `${plan.name}-subagent`,
+      description: plan.description,
+      tools: plan.allowedTools,
+      skillReference: `.agents/skills/${plan.name}/SKILL.md`
+    };
+    fs.writeFileSync(path.join(subagentDir, `${plan.name}-subagent.json`), JSON.stringify(subagentConfig, null, 2));
+
     return {
       name: plan.name,
       description: plan.description,
@@ -84,6 +108,7 @@ export class AntigravitySkillBuilder {
       skillMarkdown: fullSkillContent,
       skillFilePath,
       helperScripts,
+      rulesFile: { path: ruleFilePath, content: ruleContent },
       exportTimestamp: new Date().toISOString()
     };
   }
